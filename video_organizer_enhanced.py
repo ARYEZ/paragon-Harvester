@@ -26,7 +26,7 @@ ENABLE_EXTENDED_NAMING = True  # Set to False to disable extended filename forma
 # Source/destination folders. Defined once here and referenced everywhere so
 # there is a single place to change them. The CLI --source/--dest flags can
 # override these at runtime.
-SOURCE_FOLDER = "B:\\VAULT"
+SOURCE_FOLDER = "E:\\OUTPOST"
 DESTINATION_FOLDER = "B:\\"
 
 # Default YouTube channel to scope title searches to (CLI --channel can set it).
