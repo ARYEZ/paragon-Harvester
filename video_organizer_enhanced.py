@@ -4,6 +4,7 @@ import shutil
 import argparse
 from datetime import datetime
 import json
+import hashlib
 import subprocess
 import time
 import xml.etree.ElementTree as ET
@@ -516,14 +517,21 @@ def generate_tvshow_nfo(show_name, genre, summary, show_folder):
     summary_xml = xml_escape(strip_4byte_chars(summary) if summary else "")
     genre_xml = xml_escape(strip_4byte_chars(genre) if genre else "")
 
+    # Kodi keys a show on its <uniqueid>. A hardcoded id shared by every show
+    # makes Kodi think each new show is one it already has, so it silently
+    # skips all but the first. Derive a stable, per-show id from the title so
+    # each show is distinct and re-scans update the same show (idempotent).
+    show_uid = hashlib.md5(clean_title(show_name).encode("utf-8")).hexdigest()[:12]
+    show_uid_xml = xml_escape(show_uid)
+
     nfo_content = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <tvshow>
     <title>{showtitle_xml}</title>
     <showtitle></showtitle>
     <sorttitle clear="true">{showtitle_xml}</sorttitle>
     <originaltitle>{showtitle_xml}</originaltitle>
-    <!-- No valid ID was defined - using internal DB ID as fallback -->
-    <uniqueid default="true" type="mediaelch_fallback">1</uniqueid>
+    <!-- Stable per-show id derived from the title so Kodi keeps shows distinct -->
+    <uniqueid default="true" type="paragon">{show_uid_xml}</uniqueid>
     <userrating>0</userrating>
     <top250>0</top250>
     <episode>1</episode>
