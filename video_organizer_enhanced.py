@@ -483,8 +483,12 @@ def rename_to_extended_format(video_path, show_name, genre):
             genre = "Unknown"
         genre = sanitize(genre)
         
-        # Build new filename
-        new_base = f"{season_num}x{episode_num} - {episode_title} - {show_name} - {genre} - {resolution} - {audio_channels} - {audio_codec} - None"
+        # Build new filename. The season/episode token must lead with SxxExx
+        # (not NNxNN): Kodi's NxNN episode regex requires a separator before the
+        # number, so a name that STARTS with "01x01" isn't detected as an
+        # episode and the show ends up empty (and hidden). "S01E01" is matched
+        # regardless of position.
+        new_base = f"S{season_num}E{episode_num} - {episode_title} - {show_name} - {genre} - {resolution} - {audio_channels} - {audio_codec} - None"
         new_video_path = os.path.join(os.path.dirname(video_path), new_base + video_ext)
         new_nfo_path = os.path.join(os.path.dirname(video_path), new_base + ".nfo")
         
@@ -989,6 +993,60 @@ def sanitize_existing_nfos(root_folder):
     print(f"\nDone. {len(changed_bases)} episode NFO(s) changed.")
     return changed_bases
 
+# Matches a filename that STARTS with an "NNxNN - " season/episode token, e.g.
+# "01x01 - Title...". These are invisible to Kodi's episode scanner (its NxNN
+# regex needs a separator before the number, which a leading token lacks).
+_LEADING_NXN_RE = re.compile(r"^(\d{1,3})x(\d{1,3})( - )")
+
+def fix_episode_filenames(root_folder, dry_run=False):
+    """Rename existing "NNxNN - ..." files to "SNNENN - ..." so Kodi detects them.
+
+    Walks root_folder and renames every file (video AND its .nfo, or anything
+    else sharing that prefix) whose name begins with an "NNxNN - " token,
+    rewriting only that leading token to "SNNENN - " and leaving the rest of the
+    name untouched. tvshow.nfo and already-fixed "SxxExx" files are skipped.
+    Returns the count of files renamed. Pass dry_run=True to preview only.
+    """
+    if not os.path.isdir(root_folder):
+        print(f"Folder not found: {root_folder}")
+        return 0
+
+    print(f"Scanning '{root_folder}' for episode files with a leading NNxNN token"
+          f"{' (dry run)' if dry_run else ''}...")
+    renamed = 0
+    skipped_conflict = 0
+    for dirpath, _dirs, files in os.walk(root_folder):
+        for name in files:
+            m = _LEADING_NXN_RE.match(name)
+            if not m:
+                continue
+            season, episode, sep = m.group(1), m.group(2), m.group(3)
+            # Zero-pad to at least two digits so the token is S01E01, not S1E1.
+            new_name = f"S{int(season):02d}E{int(episode):02d}{sep}{name[m.end():]}"
+            src = os.path.join(dirpath, name)
+            dst = os.path.join(dirpath, new_name)
+            if os.path.exists(dst):
+                print(f"  Skipped (target exists): {new_name}")
+                skipped_conflict += 1
+                continue
+            if dry_run:
+                print(f"  Would rename: {name}\n            -> {new_name}")
+                renamed += 1
+                continue
+            try:
+                os.rename(src, dst)
+                renamed += 1
+            except OSError as e:
+                print(f"  Skipped (couldn't rename): {name} ({e})")
+
+    verb = "Would rename" if dry_run else "Renamed"
+    print(f"\nDone. {verb} {renamed} file(s)."
+          + (f" {skipped_conflict} skipped due to name conflicts." if skipped_conflict else ""))
+    if not dry_run and renamed:
+        print("Now run Kodi 'Clean Library' (to drop the old empty shows), then "
+              "'Update Library' so the episodes are picked up.")
+    return renamed
+
 def kodi_rpc(host, port, user, password, method, params=None):
     """Call Kodi's JSON-RPC endpoint and return the 'result' payload.
 
@@ -1165,6 +1223,14 @@ if __name__ == "__main__":
                         help="Strip 4-byte characters (emoji) from every existing .nfo in "
                              "the destination folder, fixing Kodi MySQL error 1366. "
                              "Add --kodi-host to also make Kodi re-read the cleaned files.")
+    parser.add_argument("--fix-episodenames", action="store_true",
+                        help="Rename existing 'NNxNN - ...' episode files (video and .nfo) "
+                             "in the destination folder to 'SNNENN - ...' so Kodi detects "
+                             "them. Fixes shows that don't appear because their episodes "
+                             "weren't recognized. Add --dry-run to preview without renaming.")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="With --fix-episodenames, preview the renames without changing "
+                             "any files.")
     parser.add_argument("--kodi-host", default=None,
                         help="Kodi host/IP for an automatic library refresh after --sanitize "
                              "(e.g. 10.0.0.39). Requires Kodi's HTTP remote control.")
@@ -1186,6 +1252,8 @@ if __name__ == "__main__":
     # Reset mode runs by itself and then exits, without processing any files.
     if args.reset:
         reset_show(args.reset)
+    elif args.fix_episodenames:
+        fix_episode_filenames(DESTINATION_FOLDER, dry_run=args.dry_run)
     elif args.sanitize:
         changed = sanitize_existing_nfos(DESTINATION_FOLDER)
         if args.kodi_host:
