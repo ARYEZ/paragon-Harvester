@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<settings>
+    <category label="Folders">
+        <setting id="source_folder" type="folder" label="Where downloads arrive" default=""/>
+        <setting id="dest_folder" type="folder" label="Where shows are filed" default=""/>
+        <setting id="default_genre" type="text" label="Genre for a new show" default=""/>
+        <setting id="default_channel" type="text" label="YouTube channel for a new show" default=""/>
+    </category>
+    <category label="Running">
+        <setting id="service_enabled" type="bool" label="Watch the download folder" default="false"/>
+        <setting id="poll_minutes" type="slider" label="Look every (minutes)" default="15" range="1,1,120" option="int" enable="eq(-1,true)"/>
+        <setting id="settle_seconds" type="slider" label="Leave a new file alone for (seconds)" default="30" range="5,5,300" option="int"/>
+        <setting id="ask_about_new_shows" type="bool" label="Ask about a show it has not seen" default="true"/>
+        <setting id="show_notifications" type="bool" label="Show notifications" default="true"/>
+    </category>
+    <category label="Tools">
+        <setting id="ytdlp_path" type="text" label="yt-dlp (blank to find it on the path)" default=""/>
+        <setting id="ffprobe_path" type="text" label="ffprobe (blank to find it on the path)" default=""/>
+        <setting id="lookup_seconds" type="slider" label="Give a lookup (seconds)" default="30" range="10,5,120" option="int"/>
+        <setting id="episodes_per_season" type="slider" label="Episodes before a new season" default="24" range="6,1,100" option="int"/>
+        <setting id="run_now" type="action" label="Run a pass now" action="RunScript(script.paragon.harvester,action=run)"/>
+    </category>
+</settings>

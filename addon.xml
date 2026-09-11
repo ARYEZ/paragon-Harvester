@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+Paragon Harvester
+Creator: Aryez
+Year: 2026
+Part of: Paragon TV Project
+-->
+<addon id="script.paragon.harvester" name="Paragon Harvester" version="1.0.0" provider-name="Aryez">
+    <requires>
+        <import addon="xbmc.python" version="2.25.0"/>
+    </requires>
+    <extension point="xbmc.python.script" library="default.py">
+        <provides>executable</provides>
+    </extension>
+    <extension point="xbmc.service" library="service.py" start="startup"/>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_GB">Files downloaded videos into Kodi's library as shows</summary>
+        <description lang="en_GB">Takes the videos piling up in a download folder, works out which show each one belongs to, files it under that show with a season and episode number, and writes the NFO Kodi reads. Metadata comes from YouTube through yt-dlp when it is installed.[CR][CR]The console script this grew out of is still in the repository; this is the same work done from inside Kodi, on a schedule or on demand.</description>
+        <platform>all</platform>
+        <license>GPL-3.0-or-later</license>
+        <news>v1.0.0[CR]First release as a Kodi add-on. The console script's work, done from inside Kodi: a service that watches the source folder on an interval, and a menu to run a pass, reset a show or clean up NFOs.</news>
+    </extension>
+</addon>

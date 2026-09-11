@@ -1,0 +1,38 @@
+1.0.0 (Aryez - 2026)
+    First release as a Kodi add-on. The work video_organizer_enhanced.py does
+        from a command line, done from inside Kodi 17.6: a service that watches
+        the download folder on an interval, and a menu to run a pass, see what
+        it knows, start a show over or clean up NFOs.
+    The script is still here and still runs. Nothing about it changed.
+    Ported to Python 2.7, which is what Kodi 17.6 embeds: no f-strings, no
+        subprocess timeouts, no urllib.parse. The one file allowed to know
+        which Python it is on is compat.py, and check_py2.py fails the build
+        on any other.
+    watchdog is not something a Kodi add-on can import, so the service polls.
+        A file has to have stopped changing before it is touched, which a
+        file-system event would have had to wait for anyway.
+    The sixteen console prompts became one dialog, asked only for a show it
+        has never seen. A service run asks nothing and reports which shows it
+        set up from the defaults.
+    yt-dlp and ffprobe are run as programs, not imported, and both are
+        optional: without ffprobe the NFO takes a default shape, and without
+        yt-dlp an episode keeps its generated plot.
+    Kodi is told what changed in process rather than over HTTP, so the host,
+        port, username and password the script needed are gone.
+    Fixed on the way: an emoji written by a narrow Python 2 build arrives as
+        two surrogate characters, both below U+FFFF, so the script's test for
+        "above U+FFFF" would have passed a broken pair into the NFO. Both are
+        dropped now.
+    Fixed on the way: " - Official Video" lost " official video" first and
+        kept its hyphen, so a filename came out as "01x01 - Song - - Show".
+        The suffixes are tried longest first.
+    Fixed on the way: a show started over filed its next video as 01x02. The
+        number a file gets is the number after the one stored, so a reset has
+        to store zero, which the script knew and the first port of it did not.
+    Changed on the way: a file is moved into place under its episode name in
+        one step. The script moved it under its download name and renamed it
+        after, which left a window where a library scan could pick up a file
+        about to move underneath it.
+    Changed on the way: the long filename is built from the stream details
+        already in hand rather than by reading back the NFO just written.
+    Changed on the way: one unreadable file no longer ends a pass.
