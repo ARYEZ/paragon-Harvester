@@ -141,7 +141,8 @@ def search_youtube_by_title(title, channel=None):
             print(f"Searching YouTube for: {title}")
             cmd = ['yt-dlp', '--get-id', f'ytsearch1:{title}']
 
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        result = subprocess.run(cmd, capture_output=True, text=True,
+                                encoding="utf-8", errors="replace", timeout=30)
 
         if result.returncode == 0 and result.stdout.strip():
             # Channel search can return multiple IDs; take the first.
@@ -165,6 +166,8 @@ def get_youtube_metadata(video_id):
             ['yt-dlp', '--dump-json', '--no-download', f'https://www.youtube.com/watch?v={video_id}'],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=30
         )
         
@@ -282,7 +285,8 @@ def get_video_stream_info(video_path):
             str(video_path)
         ]
         
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        result = subprocess.run(cmd, capture_output=True, text=True,
+                                encoding="utf-8", errors="replace", timeout=30)
         
         if result.returncode != 0:
             return None
