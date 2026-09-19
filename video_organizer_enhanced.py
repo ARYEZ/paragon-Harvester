@@ -114,6 +114,17 @@ SEO_KEYWORDS = (
 # always starts an SEO descriptor, never part of a real episode name.
 DURATION_RE = re.compile(r'\b\d+\s*(?:hours?|hrs?|minutes?|mins?)\b', re.IGNORECASE)
 
+# En/em dash / horizontal bar used as a "Name — subtitle" separator. The plain
+# ASCII hyphen (U+002D) is intentionally excluded (real words like "Sci-Fi" use
+# it, and it's the extended-name field delimiter).
+DASH_RE = re.compile(r'[–—―]')
+
+def strip_hashes(text):
+    """Drop stray '#' (leaked hashtags) and collapse the whitespace left."""
+    if not text:
+        return text
+    return ' '.join(text.replace('#', ' ').split())
+
 INVALID_FILENAME_CHARS = ['<', '>', ':', '"', '/', '\\', '|', '?', '*']
 
 def sanitize_filename(text):
@@ -125,12 +136,14 @@ def sanitize_filename(text):
         return text
     text = normalize_fullwidth(text)
     text = EMOJI_RE.sub('', text)
+    text = text.replace('#', ' ')       # drop leaked hashtags
     for ch in INVALID_FILENAME_CHARS:
         text = text.replace(ch, '')
     return ' '.join(text.split()).strip()
 
 def clean_title(title):
-    return strip_4byte_chars(title.strip().title())
+    cleaned = strip_hashes(strip_emoji(normalize_fullwidth(title or ""))).strip().title()
+    return strip_4byte_chars(cleaned)
 
 def extract_video_id(filename):
     """Extract YouTube video ID from filename [ID].ext format"""
@@ -672,6 +685,12 @@ def clean_episode_title(title):
         title = title.split('|')[0]
         print(f"DEBUG - After pipe cut: '{title}'")
 
+    # Same for an en/em dash separator ("Name — The Subtitle"): keep the name.
+    _dash = DASH_RE.search(title)
+    if _dash and title[:_dash.start()].strip():
+        title = title[:_dash.start()]
+        print(f"DEBUG - After dash cut: '{title}'")
+
     # Same idea for a decorative emoji separator ("Real Title ✨ SEO keywords") --
     # cut at the first emoji/symbol.
     _em = EMOJI_RE.search(title)
@@ -753,15 +772,15 @@ def clean_episode_title(title):
         title = ','.join(kept)
         print(f"DEBUG - After SEO tail removal: '{title}'")
 
-    # Drop any leftover decorative emoji/symbols anywhere in the title.
-    title = strip_emoji(title)
+    # Drop any leftover decorative emoji/symbols and stray hashtags.
+    title = strip_hashes(strip_emoji(title))
 
     # Final cleanup
     title = ' '.join(title.split())  # Remove extra spaces
     if not title or len(title) < 3:
-        # Fall back to the original with emoji stripped, and only to the raw
-        # original if even that is too short.
-        fallback = ' '.join(strip_emoji(original_title).split())
+        # Fall back to the original with emoji/hashes stripped, and only to the
+        # raw original if even that is too short.
+        fallback = ' '.join(strip_hashes(strip_emoji(original_title)).split())
         title = fallback if len(fallback) >= 3 else original_title
         print(f"WARNING - Title cleaning too aggressive, reverting to: '{title}'")
 
