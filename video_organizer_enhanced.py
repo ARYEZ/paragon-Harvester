@@ -131,6 +131,15 @@ def strip_hashes(text):
         return text
     return ' '.join(text.replace('#', ' ').split())
 
+def amp_to_and(text):
+    """Spell '&' (and its XML-escaped form '&amp;') as the word 'and' for
+    readable plot text. Preserves newlines; only tidies the spaces around it."""
+    if not text:
+        return text
+    text = re.sub(r'\s*&amp;\s*', ' and ', text)
+    text = re.sub(r'\s*&\s*', ' and ', text)
+    return re.sub(r'[ \t]{2,}', ' ', text)
+
 def _collapse_delimiter(text):
     """A field can't contain ' - ' (the extended-name delimiter) or the name
     won't parse back into fields. Collapse any ' - ' run to a single space."""
@@ -254,9 +263,9 @@ def clean_description(description, video_title, channel_name):
     # space, and strip decorative emoji/symbols (✨ ✦ ...) that channels sprinkle
     # through descriptions. For the raw description we replace emoji with a space
     # (not strip_emoji) so the '\n' line breaks survive for the filtering below.
-    description = EMOJI_RE.sub(' ', (description or "").replace('�', ' '))
-    video_title = strip_emoji((video_title or "").replace('�', ' ')).strip()
-    channel_name = strip_emoji((channel_name or "").replace('�', ' ')).strip()
+    description = amp_to_and(EMOJI_RE.sub(' ', (description or "").replace('�', ' ')))
+    video_title = amp_to_and(strip_emoji((video_title or "").replace('�', ' '))).strip()
+    channel_name = amp_to_and(strip_emoji((channel_name or "").replace('�', ' '))).strip()
 
     if not description.strip():
         return f"{video_title} from {channel_name}"
