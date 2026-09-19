@@ -251,12 +251,12 @@ def get_youtube_metadata(video_id):
 def clean_description(description, video_title, channel_name):
     """Clean up YouTube description by removing promotional content"""
     # Fold the Unicode replacement char ('�' from a failed byte decode) to a
-    # space in every field that can reach the plot, so a bad byte reads as a
-    # gap rather than a black diamond. The main path re-collapses whitespace
-    # below; the fallbacks are short enough that a stray gap is harmless.
-    description = (description or "").replace('�', ' ')
-    video_title = (video_title or "").replace('�', ' ').strip()
-    channel_name = (channel_name or "").replace('�', ' ').strip()
+    # space, and strip decorative emoji/symbols (✨ ✦ ...) that channels sprinkle
+    # through descriptions. For the raw description we replace emoji with a space
+    # (not strip_emoji) so the '\n' line breaks survive for the filtering below.
+    description = EMOJI_RE.sub(' ', (description or "").replace('�', ' '))
+    video_title = strip_emoji((video_title or "").replace('�', ' ')).strip()
+    channel_name = strip_emoji((channel_name or "").replace('�', ' ')).strip()
 
     if not description.strip():
         return f"{video_title} from {channel_name}"
