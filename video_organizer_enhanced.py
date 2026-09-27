@@ -164,8 +164,21 @@ def sanitize_filename(text):
         text = text.replace(ch, '')
     return ' '.join(text.split()).strip()
 
+def smart_title_case(text):
+    """Title-case that does NOT capitalize the letter after an apostrophe.
+
+    Python's str.title() turns "it's" into "It'S"; this keeps contractions and
+    possessives intact ("It's", "Here's", "I'm") while still capitalizing the
+    first letter of each word and lower-casing the rest.
+    """
+    return re.sub(
+        r"[A-Za-z]+(?:'[A-Za-z]+)*",
+        lambda m: m.group(0)[0].upper() + m.group(0)[1:].lower(),
+        text or "",
+    )
+
 def clean_title(title):
-    cleaned = strip_hashes(strip_emoji(normalize_fullwidth(title or ""))).strip().title()
+    cleaned = smart_title_case(strip_hashes(strip_emoji(normalize_fullwidth(title or ""))).strip())
     return strip_4byte_chars(cleaned)
 
 def extract_video_id(filename):
